@@ -1,0 +1,191 @@
+@startuml Diagrama de Classes Criso
+!theme cerulean-outline
+hide empty members
+
+title Diagrama de Classes Conceitual - Gestor Financeiro Criso
+left to right direction
+
+class Carteira {
+  +idCarteira : UUID
+  +nomePrincipal : String (ex: "Kesley S.S.J")
+ 
+  +adicionarCaixa(dadosCaixa)
+  +listarCaixas()
+  +adicionarCategoria(dadosCategoria)
+  +listarCategorias()
+  +adicionarPlanejamento(dadosPlanejamento)
+  +listarPlanejamentos()
+  +gerarRelatorioFinanceiroGeral()
+  +getSaldoTotal() : BigDecimal
+}
+
+class Caixa {
+  +idCaixa : UUID
+  +nome : String
+  +saldoInicial : BigDecimal
+  +saldoAtual : BigDecimal
+  +tipoCaixa : TipoCaixaEnum
+
+  +atualizarSaldo(valor: BigDecimal, tipoOp: TipoTransacaoEnum)
+  +adicionarTransacao(dadosTransacao)
+  +listarTransacoesDoCaixa()
+}
+
+enum TipoCaixaEnum {
+  CONTA_CORRENTE
+  POUPANCA
+  CARTEIRA_FISICA
+  CARTAO_CREDITO
+  CHEQUE
+  BITCOIN
+  FUNDOS_INVESTIMENTO
+}
+
+abstract class Transacao {
+  +idTransacao : UUID
+  +valor : BigDecimal
+  +data : LocalDate
+  +descricao : String
+  +tipoTransacao : TipoTransacaoEnum
+  +observacao : String (opcional)
+  +editarDetalhes(novosDados)
+}
+
+class Despesa {
+  +status: enum
+}
+
+enum StatusDespesa {
+  PAGO
+  PENDENTE
+}
+
+class Receita {
+}
+
+
+class Categoria {
+  +idCategoria : UUID
+  +nome : String
+  +descricao : String (opcional)
+  -cor: String
+  +listarTransacoesDaCategoria()
+  +setCor()
+  +setNome()
+  +getCor()
+  +getNome()
+}
+
+class PlanejamentoFinanceiro {
+  +idPlanejamento : UUID
+  +nomeMeta : String
+  +descricaoMeta : String (opcional)
+  +valorAlvo : BigDecimal
+  +valorAtual : BigDecimal
+  +dataCriacao : LocalDate
+  +prazoFinal : LocalDate (opcional)
+  +statusMeta : StatusMetaEnum
+ 
+  +adicionarContribuicao(valor: BigDecimal, data: LocalDate, idCaixaOrigem: UUID)
+  +listarContribuicoes()
+  +verificarProgresso() : BigDecimal
+  +editarMeta(novosDados)
+}
+
+enum StatusMetaEnum {
+  ATIVA
+  CONCLUIDA
+  CANCELADA
+  EM_ESPERA
+}
+
+class ContribuicaoMeta {
+  +idContribuicao : UUID
+  +valorContribuido : BigDecimal
+  +dataContribuicao : LocalDate
+  +observacao : String (opcional)
+}
+
+' --- Relacionamentos ---
+
+Carteira "1" - "*" Caixa : gerencia >
+' Uma Carteira gerencia vários Caixas.
+' Um Caixa pertence a uma única Carteira.
+
+Carteira "1" --- "*" Categoria : define >
+' Uma Carteira define várias Categorias.
+' Uma Categoria é definida dentro de uma Carteira.
+
+Carteira "1" -- "*" PlanejamentoFinanceiro : gerencia >
+' Uma Carteira gerencia vários Planejamentos Financeiros.
+' Um Planejamento Financeiro pertence a uma única Carteira.
+
+Caixa "1" --- "*" Transacao : contém <
+' Um Caixa pode conter várias Transações.
+' Uma Transação pertence a um único Caixa.
+
+Transacao "*" -- "1" Categoria : é classificada em >
+' Várias Transações podem ser classificadas em uma Categoria.
+' Uma Transação é classificada em uma única Categoria.
+
+PlanejamentoFinanceiro "1" -- "*" ContribuicaoMeta : registra >
+' Um Planejamento Financeiro registra várias Contribuições para a meta.
+' Cada Contribuição pertence a um Planejamento Financeiro.
+
+ContribuicaoMeta "1" -- "1" Transacao : é efetivada por >
+' Cada Contribuição para uma meta é efetivada por uma Transação específica.
+' Esta Transação geralmente será uma DESPESA no Caixa de origem,
+' categorizada como "Alocação para Meta" ou similar.
+
+Transacao <|-- Despesa
+'Especificação de Transação em Despesa(transação com valor negativo)
+Transacao <|-- Receita
+'Especificação de Transação em Despesa(transação com valor positivo))
+
+' --- Notas Explicativas (Renderizadas no Diagrama) ---
+note top of Carteira
+  Representa o container principal das finanças
+  da aplicação local. É o ponto de partida para
+  visualizar e gerenciar caixas, transações, categorias
+  e planejamentos financeiros.
+end note
+
+note right of Caixa
+  Representa um local onde o dinheiro
+  é armazenado ou de onde provém (ex: conta bancária,
+  carteira, cartão de crédito).
+  Possui um saldo que é atualizado pelas transações.
+end note
+
+note left of Transacao
+  Representa uma movimentação financeira (receita ou despesa).
+  Está sempre associada a um Caixa e a uma Categoria.
+  Transferências entre caixas são modeladas como duas
+  transações separadas. Contribuições para metas
+  também geram transações de saída de um caixa.
+end note
+
+note left of Categoria
+  Utilizada para classificar as transações,
+  ajudando a entender os padrões
+  de gastos e receitas.
+end note
+
+note bottom of PlanejamentoFinanceiro
+  Permite ao usuário definir metas financeiras
+  (ex: "Viagem", "Comprar Carro"), com valor alvo,
+  prazo e acompanhar o progresso através de contribuições.
+  O `valorAtual` é a soma das contribuições.
+end note
+
+note bottom of ContribuicaoMeta
+  Representa uma alocação específica de dinheiro
+  para um PlanejamentoFinanceiro. Cada contribuição
+  gera uma Transacao de saída de um Caixa.
+end note
+
+note bottom of Despesa
+  Receitas e Despesas são especificações de Transacao.
+end note
+
+@enduml
