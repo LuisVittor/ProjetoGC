@@ -1,5 +1,10 @@
 # Identificação do Projeto
 
+## Versão
+- Versão atual: `1.0.0`
+- Tag Git: `V1.0.0`
+- Política de versionamento: Semântico (MAJOR.MINOR.PATCH)
+
 ## Ramo
 
 Financeiro
